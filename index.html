@@ -81,6 +81,32 @@ body{font-family:-apple-system,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-se
 .g6{background:linear-gradient(145deg,#9b86bd,#5f4e8c)}
 .g7{background:linear-gradient(145deg,#c68b7a,#8c5346)}
 .g8{background:linear-gradient(145deg,#6fae9a,#3b7d6c)}
+.visor{position:fixed;inset:0;z-index:20;background:#000;opacity:0;visibility:hidden;overflow:hidden}
+.visor.on{opacity:1;visibility:visible}
+.vmedia{position:absolute;inset:0}
+.vmedia .capa{position:absolute;inset:0;opacity:0;display:grid;place-items:center;padding:32px}
+.vmedia .capa.on{opacity:1}
+.vmedia .frase{color:#fff;font-size:27px;font-weight:700;letter-spacing:-.03em;text-align:center;line-height:1.25;
+ text-shadow:0 2px 20px rgba(0,0,0,.3)}
+.vtop{position:absolute;left:0;right:0;top:0;z-index:3;padding:calc(14px + env(safe-area-inset-top)) 14px 14px;
+ display:flex;align-items:center;gap:11px;background:linear-gradient(to bottom,rgba(0,0,0,.5),transparent)}
+.vtop .avr{width:46px;height:46px}
+.vtop .avr .anillo{width:46px;height:46px}
+.vtop .avr .av{width:36px;height:36px;font-size:13px}
+.vtop .vmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.vtop .vmeta b{font-size:15px;font-weight:650;color:#fff;letter-spacing:-.02em}
+.vtop .vmeta small{font-size:11.5px;color:rgba(255,255,255,.7)}
+.vtop .vx{width:38px;height:38px;border-radius:19px;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.14)}
+.vtop .vx [data-lucide]{width:19px;height:19px}
+.vzonas{position:absolute;inset:0;z-index:2;display:flex}
+.vzonas span{flex:1}
+.vbot{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:14px 14px calc(16px + env(safe-area-inset-bottom));
+ display:flex;align-items:center;gap:9px;background:linear-gradient(to top,rgba(0,0,0,.55),transparent)}
+.vbot .vfld{flex:1;height:44px;border-radius:22px;background:rgba(255,255,255,.16);backdrop-filter:blur(14px);
+ display:flex;align-items:center;padding:0 16px;color:rgba(255,255,255,.8);font-size:14px}
+.vbot .vbtn{width:44px;height:44px;border-radius:22px;background:var(--acc);color:#fff;display:grid;place-items:center}
+.vbot .vbtn [data-lucide]{width:19px;height:19px}
+.card{cursor:pointer}
 .empty{padding:56px 24px;text-align:center;color:var(--ink3);font-size:13.5px}
 .empty b{display:block;color:var(--ink2);font-weight:600;font-size:14.5px;margin-bottom:4px}
 
@@ -150,6 +176,19 @@ body{font-family:-apple-system,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-se
       </div>
     </div>
     <div class="hairline"></div>
+  </div>
+  <div class="visor" id="visor">
+    <div class="vmedia" id="vmedia"></div>
+    <div class="vzonas"><span id="zIzq"></span><span id="zDer"></span></div>
+    <div class="vtop">
+      <span class="avr" id="vanillo"></span>
+      <span class="vmeta"><b id="vnombre"></b><small id="vtiempo"></small></span>
+      <span class="vx" id="vcerrar"><i data-lucide="x"></i></span>
+    </div>
+    <div class="vbot">
+      <span class="vfld">Responder…</span>
+      <span class="vbtn"><i data-lucide="send"></i></span>
+    </div>
   </div>
   <div class="dock"><div class="tabs">
     <span class="tb on"><i data-lucide="message-circle"></i><em>Chats</em></span>
@@ -252,6 +291,9 @@ function paintEstados(){
   }).join('') + '</div>';
   lucide.createIcons({attrs:{'stroke-width':2}});
   // cada tarjeta con varias piezas rota sola, desfasada para que no vayan al unísono
+  list.querySelectorAll('.card').forEach(c=>c.addEventListener('click',()=>{
+    const i=+c.dataset.i; if(!isNaN(i)) abrirVisor(i,c);
+  }));
   list.querySelectorAll('.card[data-n]').forEach((card,k)=>{
     const n=+card.dataset.n;
     const capas=[...card.querySelectorAll('.capa')], fills=[...card.querySelectorAll('.fil')];
@@ -272,6 +314,68 @@ function paintEstados(){
     }, D));
   });
 }
+/* ---------- visor de estados ---------- */
+const visor=document.getElementById('visor'), vmedia=document.getElementById('vmedia'),
+      vanillo=document.getElementById('vanillo'), vnombre=document.getElementById('vnombre'),
+      vtiempo=document.getElementById('vtiempo');
+let vIdx=0, vPieza=0, vTween=null, vPausa=false;
+const VD=4;                                     // segundos por pieza
+
+function pintarVisor(){
+  const d=estados[vIdx], n=d.piezas.length;
+  vmedia.innerHTML=d.piezas.map((p,i)=>`<span class="capa ${p.g}${i===vPieza?' on':''}">${
+    p.txt?`<span class="frase">${p.txt}</span>`:''}</span>`).join('');
+  vanillo.innerHTML=anillo(n)+`<span class="av ${d.av}">${d.m}</span>`;
+  vnombre.textContent=d.n; vtiempo.textContent=d.t+(n>1?` · ${vPieza+1} de ${n}`:'');
+  const fills=[...vanillo.querySelectorAll('.fil')];
+  fills.forEach((f,i)=>f.setAttribute('stroke-dasharray',(i<vPieza?+f.dataset.seg:0)+' '+RC));
+  if(vTween) vTween.kill();
+  const f=fills[vPieza], seg=+f.dataset.seg, o={v:0};
+  vTween=gsap.to(o,{v:seg,duration:VD,ease:'none',
+    onUpdate(){ f.setAttribute('stroke-dasharray',o.v+' '+RC); },
+    onComplete(){ avanzar(1); }});
+}
+function avanzar(paso){
+  const n=estados[vIdx].piezas.length;
+  if(vPieza+paso<0){ if(vIdx>0){ vIdx--; vPieza=estados[vIdx].piezas.length-1; pintarVisor(); } return; }
+  if(vPieza+paso>=n){
+    let sig=vIdx+1; while(sig<estados.length && estados[sig].add) sig++;
+    if(sig>=estados.length) return cerrarVisor();
+    vIdx=sig; vPieza=0; return pintarVisor();
+  }
+  vPieza+=paso; pintarVisor();
+}
+function abrirVisor(idx,origen){
+  if(estados[idx].add) return;
+  vIdx=idx; vPieza=0; visor.classList.add('on');
+  pintarVisor();
+  const r=origen.getBoundingClientRect();
+  gsap.fromTo(visor,{opacity:0},{opacity:1,duration:.22,ease:'power2.out'});
+  gsap.fromTo(vmedia,{scale:.72,x:r.left+r.width/2-innerWidth/2,y:r.top+r.height/2-innerHeight/2,borderRadius:20},
+    {scale:1,x:0,y:0,borderRadius:0,duration:.44,ease:'power3.out'});
+  pararCiclos();
+}
+function cerrarVisor(){
+  if(vTween) vTween.kill();
+  gsap.to(visor,{opacity:0,duration:.2,ease:'power2.in',
+    onComplete(){ visor.classList.remove('on'); if(screen==='estados') paintEstados(); }});
+}
+document.getElementById('vcerrar').addEventListener('click',cerrarVisor);
+document.getElementById('zDer').addEventListener('click',()=>avanzar(1));
+document.getElementById('zIzq').addEventListener('click',()=>avanzar(-1));
+['pointerdown','pointerup','pointercancel'].forEach(ev=>
+  visor.addEventListener(ev,e=>{
+    if(e.target.closest('.vtop,.vbot'))return;
+    const pausar=ev==='pointerdown';
+    if(vTween){ pausar?vTween.pause():vTween.resume(); }
+  }));
+let vY=null;
+visor.addEventListener('touchstart',e=>{vY=e.touches[0].clientY;},{passive:true});
+visor.addEventListener('touchend',e=>{
+  if(vY!==null && e.changedTouches[0].clientY-vY>70) cerrarVisor();
+  vY=null;
+},{passive:true});
+
 function paintLlamadas(){
   const ico={in:'arrow-down-left',out:'arrow-up-right',miss:'phone-missed'};
   list.innerHTML = llamadas.map(d=>`
