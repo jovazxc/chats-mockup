@@ -47,6 +47,37 @@ body{font-family:-apple-system,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-se
 .cta{width:34px;height:34px;border-radius:17px;background:var(--sel);display:grid;place-items:center;color:var(--acc)}
 .cta [data-lucide]{width:17px;height:17px}
 .ic [data-lucide]{width:14px;height:14px}
+.masonry{column-count:2;column-gap:9px;padding:9px 12px 0}
+.card{position:relative;break-inside:avoid;margin:0 0 9px;border-radius:20px;overflow:hidden;display:block;
+ background:var(--sel);box-shadow:0 1px 3px rgba(13,15,18,.1)}
+.card .capa{position:absolute;inset:0;opacity:0;display:grid;place-items:center;padding:16px}
+.card .capa.on{opacity:1}
+.card .frase{color:#fff;font-size:16px;font-weight:650;letter-spacing:-.02em;text-align:center;line-height:1.3;
+ text-shadow:0 1px 10px rgba(0,0,0,.25)}
+.card .segs{position:absolute;top:8px;left:9px;right:9px;display:flex;gap:3px;z-index:3}
+.card .segs i{flex:1;height:2.5px;border-radius:2px;background:rgba(255,255,255,.4);display:block;transition:background .3s}
+.card .segs i.on{background:#fff}
+.card .pie{position:absolute;left:0;right:0;bottom:0;padding:26px 11px 11px;display:flex;align-items:center;gap:8px;z-index:2;
+ background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,0))}
+.card .pie .av{width:30px;height:30px;font-size:11px;box-shadow:0 0 0 1.5px rgba(255,255,255,.5)}
+.card .pie .av.ring{box-shadow:0 0 0 2px rgba(0,0,0,.25),0 0 0 3.5px var(--acc)}
+.card .meta{min-width:0;display:flex;flex-direction:column;gap:1px}
+.card .meta b{font-size:12.5px;font-weight:650;color:#fff;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .meta small{font-size:10.5px;color:rgba(255,255,255,.75)}
+.card.add{display:grid;place-items:center;align-content:center;gap:7px;background:var(--sel);
+ box-shadow:inset 0 0 0 1.5px var(--line)}
+.card.add .plus{width:44px;height:44px;border-radius:22px;background:var(--acc);color:#fff;display:grid;place-items:center}
+.card.add .plus [data-lucide]{width:21px;height:21px}
+.card.add b{font-size:13px;font-weight:650;color:var(--ink)}
+.card.add small{font-size:11px;color:var(--ink3)}
+.g1{background:linear-gradient(145deg,#6f8f6a,#3f6b58)}
+.g2{background:linear-gradient(145deg,#b9798f,#7e4a6b)}
+.g3{background:linear-gradient(145deg,#7d8bb8,#4a5684)}
+.g4{background:linear-gradient(145deg,#c79a63,#8c6236)}
+.g5{background:linear-gradient(145deg,#6aa0b5,#3a6b84)}
+.g6{background:linear-gradient(145deg,#9b86bd,#5f4e8c)}
+.g7{background:linear-gradient(145deg,#c68b7a,#8c5346)}
+.g8{background:linear-gradient(145deg,#6fae9a,#3b7d6c)}
 .empty{padding:56px 24px;text-align:center;color:var(--ink3);font-size:13.5px}
 .empty b{display:block;color:var(--ink2);font-weight:600;font-size:14.5px;margin-bottom:4px}
 
@@ -167,13 +198,16 @@ let drag=0,locked=false,hidden=false,lastY=0,animating=false,atTop=true,filter='
 function syncPad(){ list.style.paddingTop=bar.offsetHeight+'px'; }
 
 const estados=[
- {n:'Tu estado',s:'Añade una actualización',av:'c7',m:'J',add:1},
- {n:'Judith',s:'hace 12 min',av:'c5',m:'JU',live:1},
- {n:'Beto',s:'hace 40 min',av:'c1',m:'B',live:1},
- {n:'Antonio',s:'hace 1 h',av:'c4',m:'A',live:1},
- {n:'Hotdog',s:'hace 3 h',av:'c3',m:'H',live:1},
- {n:'Vero',s:'ayer · visto',av:'c2',m:'V'},
- {n:'Isma',s:'ayer · visto',av:'c6',m:'I'},
+ {n:'Tu estado',t:'Añade una actualización',av:'c7',m:'J',add:1,h:150},
+ {n:'Judith',t:'hace 12 min',av:'c5',m:'JU',nuevo:1,h:250,
+   piezas:[{g:'g1'},{g:'g2',txt:'por fin viernes'},{g:'g3'}]},
+ {n:'Beto',t:'hace 40 min',av:'c1',m:'B',nuevo:1,h:180,piezas:[{g:'g4'}]},
+ {n:'Antonio',t:'hace 1 h',av:'c4',m:'A',nuevo:1,h:210,
+   piezas:[{g:'g5',txt:'ya quedó el pedido'},{g:'g6'}]},
+ {n:'Hotdog',t:'hace 3 h',av:'c3',m:'H',nuevo:1,h:150,piezas:[{g:'g7'}]},
+ {n:'Vero',t:'ayer',av:'c2',m:'V',h:230,piezas:[{g:'g8'},{g:'g1'},{g:'g4'},{g:'g6'}]},
+ {n:'Isma',t:'ayer',av:'c6',m:'I',h:170,piezas:[{g:'g2'}]},
+ {n:'Mamá',t:'ayer',av:'c4',m:'M',h:200,piezas:[{g:'g3',txt:'el jardín quedó listo'},{g:'g5'}]},
 ];
 const llamadas=[
  {n:'Esposita',k:'in',t:'hoy 13:02',d:'12 min',av:'c2',m:'E',video:1},
@@ -184,13 +218,41 @@ const llamadas=[
  {n:'Carlos',k:'miss',t:'dom 09:12',d:'perdida',av:'c8',m:'C'},
  {n:'Beto',k:'out',t:'sáb 22:40',d:'1 h 05',av:'c1',m:'B'},
 ];
+let ciclos=[];
+function pararCiclos(){ ciclos.forEach(c=>clearInterval(c)); ciclos=[]; }
 function paintEstados(){
-  list.innerHTML = estados.map(d=>`
-   <div class="row">
-     <span class="av ${d.av}${d.live?' ring':''}">${d.add?'<i data-lucide="plus"></i>':d.m}</span>
-     <span class="col"><span class="n">${d.n}</span><span class="p">${d.s}</span></span>
-     <span class="rt">${d.add?'':'<span class="ic"><i data-lucide="chevron-right"></i></span>'}</span>
-   </div>`).join('');
+  pararCiclos();
+  list.innerHTML = '<div class="masonry">' + estados.map((d,idx)=>{
+    if(d.add) return `<article class="card add" style="height:${d.h}px">
+        <span class="plus"><i data-lucide="plus"></i></span>
+        <b>Tu estado</b><small>${d.t}</small></article>`;
+    const n=d.piezas.length;
+    const capas=d.piezas.map((p,i)=>`<span class="capa ${p.g}${i?'':' on'}">${
+        p.txt?`<span class="frase">${p.txt}</span>`:''}</span>`).join('');
+    const barras=n>1?`<span class="segs">${d.piezas.map((_,i)=>
+        `<i class="${i?'':'on'}"></i>`).join('')}</span>`:'';
+    return `<article class="card${d.nuevo?' nuevo':''}" data-i="${idx}" data-n="${n}" style="height:${d.h}px">
+      ${capas}${barras}
+      <span class="pie">
+        <span class="av ${d.av}${d.nuevo?' ring':''}">${d.m}</span>
+        <span class="meta"><b>${d.n}</b><small>${d.t}${n>1?' · '+n:''}</small></span>
+      </span></article>`;
+  }).join('') + '</div>';
+  lucide.createIcons({attrs:{'stroke-width':2}});
+  // cada tarjeta con varias piezas rota sola, desfasada para que no vayan al unísono
+  list.querySelectorAll('.card[data-n]').forEach((card,k)=>{
+    const n=+card.dataset.n; if(n<2) return;
+    const capas=[...card.querySelectorAll('.capa')], segs=[...card.querySelectorAll('.segs i')];
+    let a=0;
+    const id=setInterval(()=>{
+      const sig=(a+1)%n;
+      gsap.to(capas[a],{opacity:0,duration:.5,ease:'power2.inOut'});
+      gsap.fromTo(capas[sig],{opacity:0,scale:1.04},{opacity:1,scale:1,duration:.6,ease:'power2.out'});
+      segs[a].classList.remove('on'); segs[sig].classList.add('on');
+      a=sig;
+    }, 2600 + k*420);
+    ciclos.push(id);
+  });
 }
 function paintLlamadas(){
   const ico={in:'arrow-down-left',out:'arrow-up-right',miss:'phone-missed'};
@@ -203,6 +265,7 @@ function paintLlamadas(){
    </div>`).join('');
 }
 function paint(){
+  if(screen!=='estados') pararCiclos();
   if(screen==='estados'){ paintEstados(); lucide.createIcons({attrs:{'stroke-width':2}}); syncPad(); return; }
   if(screen==='llamadas'){ paintLlamadas(); lucide.createIcons({attrs:{'stroke-width':2}}); syncPad(); return; }
   const f=filter;
